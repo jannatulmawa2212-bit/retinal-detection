@@ -20,6 +20,17 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import mm
 from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
+                                Table, TableStyle, Image as RLImage,
+                                HRFlowable)
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+import io
+import base64
+from datetime import datetime
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
                                  Table, TableStyle, Image as RLImage,
                                  HRFlowable)
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -165,18 +176,6 @@ class PRETIClassifier(nn.Module):
 
 @st.cache_resource
 def load_model():
-    from huggingface_hub import hf_hub_download
-import io
-import base64
-from datetime import datetime
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.lib.units import mm
-from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
-                                 Table, TableStyle, Image as RLImage,
-                                 HRFlowable)
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
     model = PRETIClassifier().to(DEVICE)
     try:
         # Download model from HuggingFace
