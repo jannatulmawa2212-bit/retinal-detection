@@ -18,7 +18,7 @@ from huggingface_hub import hf_hub_download
 # =============================================================================
 st.set_page_config(
     page_title="Retinal Disease Detection",
-    page_icon="👁️",
+    page_icon="🩺",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -209,9 +209,34 @@ h1,h2,h3 { color: #4a148c !important; }
 .stMarkdown p { color: #4a148c; }
 
 div[data-testid="stFileUploader"] {
-    background: white;
-    border-radius: 16px;
-    padding: 8px;
+    background: white !important;
+    border-radius: 16px !important;
+    padding: 8px !important;
+}
+div[data-testid="stFileUploader"] > div {
+    background: white !important;
+    border-radius: 12px !important;
+}
+div[data-testid="stFileUploader"] button {
+    background: linear-gradient(135deg, #f48fb1, #ce93d8) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 20px !important;
+    font-weight: 700 !important;
+}
+div[data-testid="stFileDropzone"] {
+    background: linear-gradient(135deg, #fce4ec, #f3e5f5) !important;
+    border: 2px dashed #f48fb1 !important;
+    border-radius: 16px !important;
+}
+div[data-testid="stFileDropzone"] p {
+    color: #9c27b0 !important;
+    font-weight: 600 !important;
+}
+section[data-testid="stFileUploadDropzone"] {
+    background: linear-gradient(135deg, #fce4ec, #f3e5f5) !important;
+    border: 2px dashed #f48fb1 !important;
+    border-radius: 16px !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -340,7 +365,7 @@ def get_severity(name, prob):
 with st.sidebar:
     st.markdown("""
     <div style='text-align:center;padding:16px 0 8px'>
-        <div style='font-size:40px'>👁️</div>
+        <div style='font-size:40px'>🩺</div>
         <div style='font-size:18px;font-weight:800;
                     background:linear-gradient(135deg,#f48fb1,#ce93d8);
                     -webkit-background-clip:text;
@@ -398,7 +423,7 @@ with st.sidebar:
 # Hero header with animated gradient
 st.markdown("""
 <div class='hero-header'>
-    <div style='font-size:44px;margin-bottom:8px'>👁️</div>
+    <div style='font-size:44px;margin-bottom:8px'>🩺</div>
     <div class='hero-title'>Retinal Disease Detection</div>
     <div class='hero-sub'>
         AI-powered simultaneous detection of
