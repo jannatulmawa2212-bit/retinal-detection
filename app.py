@@ -19,87 +19,151 @@ from huggingface_hub import hf_hub_download
 # =============================================================================
 st.set_page_config(
     page_title="Retinal Disease Detection System",
-    page_icon="🔬",
+    page_icon="🩺",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # =============================================================================
-# CUSTOM CSS
+# CUSTOM CSS — Original dark theme + pastel touch + pookie button
 # =============================================================================
 st.markdown("""
 <style>
-    .main { background-color: #0D1117; color: #E6EDF3; }
-    .stApp { background-color: #0D1117; }
-    section[data-testid="stSidebar"] {
-        background-color: #161B22;
-        border-right: 1px solid #30363D;
-    }
-    .metric-card {
-        background: #161B22;
-        border: 1px solid #30363D;
-        border-radius: 10px;
-        padding: 16px;
-        text-align: center;
-        margin: 4px;
-    }
-    .metric-value {
-        font-size: 28px;
-        font-weight: bold;
-        color: white;
-    }
-    .metric-label {
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-    }
-    .metric-sub {
-        font-size: 11px;
-        color: #8B949E;
-        margin-top: 2px;
-    }
-    .disease-card {
-        background: #161B22;
-        border-radius: 10px;
-        padding: 14px;
-        margin: 6px 0;
-        border-left: 4px solid;
-    }
-    .status-detected {
-        background: #1a0a0a;
-        border: 1px solid #FF6B6B;
-        border-radius: 8px;
-        padding: 12px;
-        text-align: center;
-        font-size: 18px;
-        font-weight: bold;
-        color: #FF6B6B;
-    }
-    .status-normal {
-        background: #0a1a0a;
-        border: 1px solid #51CF66;
-        border-radius: 8px;
-        padding: 12px;
-        text-align: center;
-        font-size: 18px;
-        font-weight: bold;
-        color: #51CF66;
-    }
-    h1, h2, h3 { color: #E6EDF3 !important; }
-    .stButton>button {
-        background: linear-gradient(135deg, #238636, #2EA043);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 12px 32px;
-        font-size: 16px;
-        font-weight: bold;
-        width: 100%;
-    }
-    .stButton>button:hover {
-        background: linear-gradient(135deg, #2EA043, #3FB950);
-    }
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+* { font-family: 'Nunito', sans-serif !important; }
+
+.stApp {
+    background: linear-gradient(160deg,
+        #1a0d2e 0%, #0d1117 30%,
+        #0d1a2e 60%, #1a0d2e 100%) !important;
+}
+
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #1e0a35 0%, #161B22 100%);
+    border-right: 1px solid #3d1f5e;
+}
+
+.metric-card {
+    background: #1e1030;
+    border: 1px solid #3d1f5e;
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    margin: 4px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(156,39,176,0.2);
+}
+
+.metric-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: white;
+}
+
+.metric-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.metric-sub {
+    font-size: 11px;
+    color: #8B949E;
+    margin-top: 2px;
+}
+
+.disease-card {
+    background: #1e1030;
+    border-radius: 14px;
+    padding: 14px;
+    margin: 8px 0;
+    border-left: 4px solid;
+    transition: transform 0.2s;
+}
+
+.disease-card:hover { transform: translateX(4px); }
+
+.status-detected {
+    background: linear-gradient(135deg, #2d0a1a, #1a0d2e);
+    border: 2px solid #f48fb1;
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 800;
+    color: #f48fb1;
+    box-shadow: 0 4px 20px rgba(244,143,177,0.2);
+    animation: glowPulse 2s ease infinite;
+}
+
+.status-normal {
+    background: linear-gradient(135deg, #0a1f0d, #0d1117);
+    border: 2px solid #81c784;
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 800;
+    color: #81c784;
+    box-shadow: 0 4px 20px rgba(129,199,132,0.2);
+}
+
+@keyframes glowPulse {
+    0%,100% { box-shadow: 0 4px 20px rgba(244,143,177,0.2); }
+    50%      { box-shadow: 0 4px 30px rgba(244,143,177,0.5); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes heroGlow {
+    0%,100% { box-shadow: 0 8px 40px rgba(156,39,176,0.3); }
+    50%      { box-shadow: 0 8px 50px rgba(233,30,140,0.5); }
+}
+
+.hero-banner {
+    background: linear-gradient(135deg, #9c27b0, #e91e8c, #2196f3);
+    background-size: 200% 200%;
+    animation: gradMove 5s ease infinite, heroGlow 3s ease infinite;
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+@keyframes gradMove {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+h1, h2, h3 { color: #E6EDF3 !important; }
+
+.stButton>button {
+    background: linear-gradient(135deg, #9c27b0, #e91e8c) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 30px !important;
+    padding: 12px 32px !important;
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    width: 100% !important;
+    box-shadow: 0 4px 20px rgba(156,39,176,0.4) !important;
+    letter-spacing: 0.3px !important;
+}
+
+.stButton>button:hover {
+    background: linear-gradient(135deg, #ab47bc, #f06292) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 28px rgba(156,39,176,0.6) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -114,7 +178,7 @@ N_SIDE      = 14
 LABEL_NAMES = ['DR', 'GLAUCOMA', 'HR', 'RVO']
 LABEL_FULL  = ['Diabetic Retinopathy', 'Glaucoma',
                'Hypertensive Retinopathy', 'Retinal Vein Occlusion']
-COLORS      = ['#FF6B6B', '#51CF66', '#74C0FC', '#FFA94D']
+COLORS      = ['#f48fb1', '#81c784', '#64b5f6', '#ffb74d']
 THRESHOLDS  = {'DR': 0.3894, 'GLAUCOMA': 0.5200,
                'HR': 0.8667, 'RVO': 0.3765}
 SEVERITY    = {
@@ -154,15 +218,12 @@ class PRETIClassifier(nn.Module):
 
 @st.cache_resource
 def load_model():
-    from huggingface_hub import hf_hub_download
     model = PRETIClassifier().to(DEVICE)
     try:
-        # Download model from HuggingFace
         model_path = hf_hub_download(
             repo_id="mawa2212/preti-retinal-weights",
             filename="best_model.pth",
-            repo_type="model"
-        )
+            repo_type="model")
         state      = torch.load(model_path, map_location=DEVICE)
         model_dict = model.state_dict()
         filtered   = {k: v for k, v in state.items()
@@ -170,9 +231,9 @@ def load_model():
                       model_dict[k].shape == v.shape}
         model_dict.update(filtered)
         model.load_state_dict(model_dict)
-        st.sidebar.success("✅ Model loaded successfully")
+        st.sidebar.success("✅ Model loaded")
     except Exception as e:
-        st.sidebar.error(f"Model load error: {e}")
+        st.sidebar.error(f"Error: {e}")
     model.eval()
     return model
 
@@ -228,12 +289,16 @@ def get_severity(name, prob):
 with st.sidebar:
     st.markdown("""
     <div style='text-align:center;padding:8px 0 16px'>
-        <div style='font-size:32px'>🔬</div>
-        <div style='font-size:16px;font-weight:700;color:#E6EDF3'>
-            RetinalAI Vision
+        <div style='font-size:32px'>🩺</div>
+        <div style='font-size:16px;font-weight:800;
+                    background:linear-gradient(135deg,#f48fb1,#ce93d8);
+                    -webkit-background-clip:text;
+                    -webkit-text-fill-color:transparent'>
+            Retinal AI
         </div>
-        <div style='font-size:11px;color:#8B949E;margin-top:4px'>
-            AI-Powered Retinal Disease Detection
+        <div style='font-size:11px;color:#ce93d8;margin-top:4px;
+                    font-weight:600'>
+            AI-Powered Disease Detection
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -242,12 +307,12 @@ with st.sidebar:
     st.markdown("### 📊 Model Performance")
 
     metrics = [
-        ("Macro AUC", "0.9903", "#51CF66"),
+        ("Macro AUC", "0.9903", "#f48fb1"),
         ("DR AUC",    "0.9869", "#FF6B6B"),
-        ("GL AUC",    "0.9999", "#74C0FC"),
-        ("HR AUC",    "0.9881", "#FFA94D"),
-        ("RVO AUC",   "0.9864", "#CC5DE8"),
-        ("BW Saved",  "70.3%",  "#51CF66"),
+        ("GL AUC",    "0.9999", "#81c784"),
+        ("HR AUC",    "0.9881", "#64b5f6"),
+        ("RVO AUC",   "0.9864", "#ffb74d"),
+        ("BW Saved",  "70.3%",  "#ce93d8"),
     ]
     cols = st.columns(2)
     for idx, (label, val, color) in enumerate(metrics):
@@ -255,52 +320,70 @@ with st.sidebar:
             st.markdown(f"""
             <div class='metric-card'>
                 <div class='metric-label' style='color:{color}'>{label}</div>
-                <div class='metric-value'>{val}</div>
+                <div class='metric-value' style='color:{color}'>{val}</div>
             </div>
             """, unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("### ℹ️ About")
     st.markdown("""
-    <div style='color:#8B949E;font-size:12px;line-height:1.8'>
-    This system uses <b style='color:#E6EDF3'>advanced AI</b> foundation model
-    pretrained on <b style='color:#E6EDF3'>1,017,549</b> retinal images
+    <div style='color:#ce93d8;font-size:12px;line-height:1.8'>
+    Uses <b style='color:#f48fb1'>advanced AI</b> foundation model
+    pretrained on <b style='color:#f48fb1'>1,017,549</b> retinal images
     to simultaneously detect 4 diseases.<br><br>
-    <b style='color:#58A6FF'>AGPT</b> uses PRETI's RAAM attention maps
-    to transmit only disease-relevant patches — saving
-    <b style='color:#51CF66'>70.3%</b> bandwidth for rural telemedicine.
+    <b style='color:#64b5f6'>AGPT</b> transmits only disease-relevant
+    patches — saving <b style='color:#81c784'>70.3%</b> bandwidth.
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("""
     <div style='color:#484F58;font-size:10px;line-height:1.6'>
-    PRETI: Lee et al., 2026<br>
     Focal Loss: Lin et al., 2020<br>
-    Sampler: Cui et al., 2019
+    Sampler: Cui et al., 2019<br>
+    ViT: Dosovitskiy et al., 2021
     </div>
     """, unsafe_allow_html=True)
 
 # =============================================================================
 # MAIN PAGE
 # =============================================================================
+
+# Animated hero banner
 st.markdown("""
-<div style='text-align:center;padding:8px 0 24px'>
-    <div style='font-size:13px;color:#58A6FF;font-weight:600;
-                letter-spacing:2px;margin-bottom:6px'>
+<div class='hero-banner'>
+    <div style='font-size:13px;color:rgba(255,255,255,0.85);
+                font-weight:700;letter-spacing:2px;margin-bottom:6px'>
         ADVANCED RETINAL DISEASE DETECTION SYSTEM · 2026
     </div>
-    <div style='font-size:30px;font-weight:700;color:#E6EDF3;
-                margin-bottom:8px'>
-        👁️ Retinal Disease Detection System
+    <div style='font-size:30px;font-weight:800;color:white;
+                text-shadow:0 2px 8px rgba(0,0,0,0.2);margin-bottom:8px'>
+        🩺 Retinal Disease Detection
     </div>
-    <div style='font-size:14px;color:#8B949E'>
+    <div style='font-size:14px;color:rgba(255,255,255,0.85)'>
         Multi-label detection of
-        <span style='color:#FF6B6B;font-weight:600'>DR</span> ·
-        <span style='color:#51CF66;font-weight:600'>Glaucoma</span> ·
-        <span style='color:#74C0FC;font-weight:600'>HR</span> ·
-        <span style='color:#FFA94D;font-weight:600'>RVO</span>
+        <span style='color:#fce4ec;font-weight:700'>DR</span> ·
+        <span style='color:#e8f5e9;font-weight:700'>Glaucoma</span> ·
+        <span style='color:#e3f2fd;font-weight:700'>HR</span> ·
+        <span style='color:#fff3e0;font-weight:700'>RVO</span>
         with AGPT Bandwidth-Efficient Transmission
+    </div>
+    <div style='margin-top:14px'>
+        <span style='background:rgba(255,255,255,0.2);color:white;
+                     padding:5px 14px;border-radius:20px;font-size:12px;
+                     font-weight:700;margin:3px;display:inline-block'>
+            ✨ Macro AUC 0.9903
+        </span>
+        <span style='background:rgba(255,255,255,0.2);color:white;
+                     padding:5px 14px;border-radius:20px;font-size:12px;
+                     font-weight:700;margin:3px;display:inline-block'>
+            💜 70.3% Bandwidth Saved
+        </span>
+        <span style='background:rgba(255,255,255,0.2);color:white;
+                     padding:5px 14px;border-radius:20px;font-size:12px;
+                     font-weight:700;margin:3px;display:inline-block'>
+            ⚡ 4 Diseases at Once
+        </span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -312,7 +395,7 @@ model = load_model()
 col_upload, col_results = st.columns([1, 2])
 
 with col_upload:
-    st.markdown("#### Upload Retinal Image")
+    st.markdown("#### 📤 Upload Retinal Image")
     uploaded = st.file_uploader(
         "Choose a retinal fundus image",
         type=['jpg','jpeg','png'],
@@ -320,21 +403,23 @@ with col_upload:
 
     if uploaded:
         img = Image.open(uploaded).convert('RGB')
-        st.image(img, caption="Uploaded Image", use_column_width=True)
-        analyze_btn = st.button("🔍  Analyze Retina")
+        st.image(img, caption="Ready to analyze ✨", use_column_width=True)
+        analyze_btn = st.button("🔍 Analyze Retina")
     else:
         st.markdown("""
-        <div style='background:#161B22;border:1px dashed #30363D;
-                    border-radius:10px;padding:40px;text-align:center;
-                    color:#8B949E;font-size:13px'>
-            📤 Upload a retinal fundus photograph<br>
-            <span style='font-size:11px'>JPEG or PNG · Any resolution</span>
+        <div style='background:#1e1030;border:1px dashed #3d1f5e;
+                    border-radius:14px;padding:40px;text-align:center;
+                    color:#ce93d8;font-size:13px'>
+            🩺 Upload a retinal fundus photograph<br>
+            <span style='font-size:11px;color:#8B949E'>
+                JPEG or PNG · Any resolution
+            </span>
         </div>
         """, unsafe_allow_html=True)
         analyze_btn = False
 
 if uploaded and analyze_btn:
-    with st.spinner("Analyzing retina..."):
+    with st.spinner("🔬 Analyzing retina..."):
         t0     = time.time()
         tensor = preprocess(img)
 
@@ -364,53 +449,63 @@ if uploaded and analyze_btn:
         detected = [n for n,p in zip(LABEL_NAMES,probs)
                     if p >= THRESHOLDS[n]]
 
-    # ── Results ──────────────────────────────────────────────────
     with col_results:
-        # Status
         if detected:
             st.markdown(f"""
             <div class='status-detected'>
-                ⚠️  DISEASE DETECTED: {', '.join(detected)}
+                ⚠️ DISEASE DETECTED: {', '.join(detected)}
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown("""
-            <div class='status-normal'>✅  NORMAL — No disease detected</div>
+            <div class='status-normal'>
+                ✅ NORMAL — No disease detected
+            </div>
             """, unsafe_allow_html=True)
 
-        st.markdown(f"<div style='color:#8B949E;font-size:12px;margin:6px 0'>Analysis completed in {elapsed:.2f}s</div>",
-                    unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style='color:#ce93d8;font-size:12px;margin:6px 0'>
+            ⚡ Analysis completed in {elapsed:.2f}s
+        </div>
+        """, unsafe_allow_html=True)
 
-    # ── 4 image panels ───────────────────────────────────────────
-    st.markdown("### Visual Analysis")
+    # 4 image panels
+    st.markdown("### 🔬 Visual Analysis")
     c1, c2, c3, c4 = st.columns(4)
     orig_np  = to_display(tensor)
     recon_np = to_display(recon)
     attn_map = attn.reshape(N_SIDE, N_SIDE).numpy()
 
     with c1:
-        st.image(orig_np, caption="① Original (CLAHE)", use_column_width=True)
+        st.image(orig_np, caption="① Original (CLAHE)",
+                 use_column_width=True)
     with c2:
-        fig_attn, ax = plt.subplots(figsize=(3,3), facecolor='#0D1117')
-        ax.imshow(attn_map, cmap='inferno', interpolation='bilinear')
+        fig_attn, ax = plt.subplots(figsize=(3,3), facecolor='#1e1030')
+        ax.imshow(attn_map, cmap='RdPu', interpolation='bilinear')
         ax.axis('off')
-        ax.set_title('② RAAM Attention', color='white', fontsize=9, pad=4)
+        ax.set_title('② AI Attention', color='#f48fb1',
+                     fontsize=9, pad=4)
         st.pyplot(fig_attn, use_container_width=True)
         plt.close()
     with c3:
-        fig_sel, ax = plt.subplots(figsize=(3,3), facecolor='#0D1117')
+        fig_sel, ax = plt.subplots(figsize=(3,3), facecolor='#1e1030')
         ax.imshow(orig_np)
-        ax.imshow(mask_full, alpha=0.55, cmap='YlOrRd')
+        ax.imshow(mask_full, alpha=0.5,
+                  cmap=matplotlib.colors.LinearSegmentedColormap.from_list(
+                      '', [(1,1,1,0),(0.96,0.28,0.56,0.6)]))
         ax.axis('off')
-        ax.set_title(f'③ {top_k}/196 Patches', color='white', fontsize=9, pad=4)
+        ax.set_title(f'③ {top_k}/196 Patches', color='#f48fb1',
+                     fontsize=9, pad=4)
         st.pyplot(fig_sel, use_container_width=True)
         plt.close()
     with c4:
-        st.image(recon_np, caption="④ Doctor Receives", use_column_width=True)
+        st.image(recon_np, caption="④ Doctor Receives",
+                 use_column_width=True)
 
-    # ── Disease predictions ───────────────────────────────────────
-    st.markdown("### Disease Predictions")
-    for name, full, prob, color in zip(LABEL_NAMES, LABEL_FULL, probs, COLORS):
+    # Disease predictions
+    st.markdown("### 🩺 Disease Predictions")
+    for name, full, prob, color in zip(LABEL_NAMES, LABEL_FULL,
+                                        probs, COLORS):
         th  = THRESHOLDS[name]
         det = prob >= th
         sev = get_severity(name, prob)
@@ -420,20 +515,23 @@ if uploaded and analyze_btn:
         with col_a:
             st.markdown(f"""
             <div class='disease-card'
-                 style='border-color:{"" + color if det else "#30363D"}'>
+                 style='border-color:{"" + color if det else "#3d1f5e"}'>
                 <div style='display:flex;justify-content:space-between;
                             align-items:center;margin-bottom:6px'>
-                    <span style='color:white;font-weight:600;font-size:14px'>
+                    <span style='color:white;font-weight:700;font-size:14px'>
                         {full}
                     </span>
                     <span style='color:{"" + color if det else "#8B949E"};
-                                 font-weight:bold;font-size:13px'>
+                                 font-weight:800;font-size:13px;
+                                 background:{"rgba(244,143,177,0.1)" if det else "transparent"};
+                                 padding:2px 10px;border-radius:20px'>
                         {"✓ " + sev.upper() if det else "✗ Not Detected"}
                     </span>
                 </div>
-                <div style='background:#21262D;border-radius:4px;height:8px'>
-                    <div style='background:{color};border-radius:4px;
-                                height:8px;width:{pct}%'></div>
+                <div style='background:#2d1040;border-radius:20px;height:8px'>
+                    <div style='background:linear-gradient(90deg,{color},white);
+                                border-radius:20px;height:8px;
+                                width:{pct}%'></div>
                 </div>
                 <div style='display:flex;justify-content:space-between;
                             margin-top:4px'>
@@ -441,63 +539,74 @@ if uploaded and analyze_btn:
                         {DISEASE_INFO[name][0]}
                     </span>
                     <span style='color:{color};font-size:12px;
-                                 font-weight:bold'>{prob:.3f}</span>
+                                 font-weight:800'>{prob:.3f}</span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
 
-    # ── AGPT Stats ────────────────────────────────────────────────
-    st.markdown("### AGPT Transmission Stats")
+    # AGPT Stats
+    st.markdown("### 📡 AGPT Transmission Stats")
     s1, s2, s3, s4 = st.columns(4)
     stats = [
-        (s1, "PATCHES SENT",     f"{top_k}/196", "30% of image",    "#74C0FC"),
-        (s2, "DATA TRANSMITTED", "178 KB",        "was 588 KB",      "#51CF66"),
-        (s3, "BANDWIDTH SAVED",  "70.3%",         "410 KB reduced",  "#FF6B6B"),
-        (s4, "TIME SAVED @2G",   "32 sec",        "15s vs 47s",      "#FFA94D"),
+        (s1, "PATCHES SENT",     f"{top_k}/196", "30% of image",   "#64b5f6"),
+        (s2, "DATA TRANSMITTED", "178 KB",        "was 588 KB",     "#81c784"),
+        (s3, "BANDWIDTH SAVED",  "70.3%",         "410 KB reduced", "#f48fb1"),
+        (s4, "TIME SAVED @2G",   "32 sec",        "15s vs 47s",     "#ffb74d"),
     ]
     for col, label, val, sub, color in stats:
         with col:
             st.markdown(f"""
             <div class='metric-card'
-                 style='border:1px solid {color}'>
+                 style='border:1px solid {color}40'>
                 <div class='metric-label'
                      style='color:{color}'>{label}</div>
-                <div class='metric-value'>{val}</div>
+                <div class='metric-value'
+                     style='color:{color}'>{val}</div>
                 <div class='metric-sub'>{sub}</div>
             </div>
             """, unsafe_allow_html=True)
 
-    # ── Clinical note if detected ─────────────────────────────────
     if detected:
-        st.markdown("### Clinical Indicators")
+        st.markdown("### 🏥 Clinical Indicators")
         for name in detected:
             signs, cause = DISEASE_INFO[name]
             color = COLORS[LABEL_NAMES.index(name)]
             st.markdown(f"""
-            <div style='background:#161B22;border-left:4px solid {color};
-                        border-radius:8px;padding:12px;margin:6px 0'>
-                <b style='color:{color}'>{name}</b><br>
+            <div style='background:#1e1030;border-left:4px solid {color};
+                        border-radius:12px;padding:14px;margin:6px 0'>
+                <b style='color:{color};font-size:14px'>{name}</b><br>
                 <span style='color:#E6EDF3;font-size:13px'>
-                    Signs: {signs}</span><br>
+                    🔍 Signs: {signs}
+                </span><br>
                 <span style='color:#8B949E;font-size:12px'>
-                    Cause: {cause}</span>
+                    💡 Cause: {cause}
+                </span>
             </div>
             """, unsafe_allow_html=True)
 
 elif not uploaded:
     with col_results:
         st.markdown("""
-        <div style='background:#161B22;border:1px solid #30363D;
-                    border-radius:10px;padding:40px;text-align:center;
-                    color:#8B949E;margin-top:32px'>
-            <div style='font-size:40px;margin-bottom:12px'>🔬</div>
-            <div style='font-size:16px;font-weight:600;color:#E6EDF3;
+        <div style='background:#1e1030;border:1px solid #3d1f5e;
+                    border-radius:14px;padding:40px;text-align:center;
+                    color:#ce93d8;margin-top:32px'>
+            <div style='font-size:40px;margin-bottom:12px'>🩺</div>
+            <div style='font-size:16px;font-weight:700;color:#f48fb1;
                         margin-bottom:8px'>
                 Upload a retinal image to begin
             </div>
-            <div style='font-size:13px;line-height:1.8'>
-                The system will detect DR, Glaucoma, HR and RVO<br>
-                simultaneously and show AGPT bandwidth analysis
+            <div style='font-size:13px;line-height:1.9;color:#ce93d8'>
+                Detects DR · Glaucoma · HR · RVO simultaneously<br>
+                Shows AGPT bandwidth analysis
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+# Footer
+st.markdown("""
+<div style='text-align:center;padding:24px 0 8px;
+            color:#3d1f5e;font-size:11px'>
+    Made with 💜 · AI Foundation Model · AGPT Novel Contribution ·
+    Focal Loss · Class-Balanced Sampling · 2026
+</div>
+""", unsafe_allow_html=True)
