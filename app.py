@@ -19,7 +19,7 @@ from huggingface_hub import hf_hub_download
 # =============================================================================
 st.set_page_config(
     page_title="Retinal Disease Detection System",
-    page_icon="🔬",
+    page_icon="🩺",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -292,7 +292,7 @@ st.markdown("""
     </div>
     <div style='font-size:30px;font-weight:700;color:#E6EDF3;
                 margin-bottom:8px'>
-        👁️ Retinal Disease Detection System
+        🩺 Retinal Disease Detection System
     </div>
     <div style='font-size:14px;color:#8B949E'>
         Multi-label detection of
