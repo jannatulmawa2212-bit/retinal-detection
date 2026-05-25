@@ -369,7 +369,7 @@ with col_left:
         type=['jpg','jpeg','png'])
     if uploaded:
         img = Image.open(uploaded).convert('RGB')
-        st.image(img, use_column_width=True, caption="✨ Ready to analyze!")
+        st.image(img, width='stretch', caption="✨ Ready to analyze!")
         analyze_btn = st.button("🔍 Analyze Retina ✨")
     else:
         st.markdown("""
@@ -458,7 +458,7 @@ if uploaded and analyze_btn:
                 <div class='panel-title'>{title}</div>
             </div>
             """, unsafe_allow_html=True)
-            st.image(content, use_column_width=True)
+            st.image(content, width='stretch')
 
     with c2:
         st.markdown("""
@@ -470,7 +470,7 @@ if uploaded and analyze_btn:
         fig.patch.set_facecolor('white')
         ax.imshow(attn_map, cmap='RdPu', interpolation='bilinear')
         ax.axis('off'); plt.tight_layout(pad=0)
-        st.pyplot(fig, use_container_width=True); plt.close()
+        st.pyplot(fig, width='stretch'); plt.close()
 
     with c3:
         st.markdown(f"""
@@ -485,7 +485,7 @@ if uploaded and analyze_btn:
                    cmap=matplotlib.colors.LinearSegmentedColormap.from_list(
                        '',['white','#f48fb1']))
         ax2.axis('off'); plt.tight_layout(pad=0)
-        st.pyplot(fig2, use_container_width=True); plt.close()
+        st.pyplot(fig2, width='stretch'); plt.close()
 
     st.markdown("### 🩺 Disease Predictions")
     for name,full,prob,color,dark,icon in zip(
