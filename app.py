@@ -13,6 +13,17 @@ from torchvision import transforms
 import time
 import os
 from huggingface_hub import hf_hub_download
+import io
+import base64
+from datetime import datetime
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
+                                 Table, TableStyle, Image as RLImage,
+                                 HRFlowable)
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 # =============================================================================
 # PAGE CONFIG
@@ -155,6 +166,17 @@ class PRETIClassifier(nn.Module):
 @st.cache_resource
 def load_model():
     from huggingface_hub import hf_hub_download
+import io
+import base64
+from datetime import datetime
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
+                                 Table, TableStyle, Image as RLImage,
+                                 HRFlowable)
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
     model = PRETIClassifier().to(DEVICE)
     try:
         # Download model from HuggingFace
@@ -221,6 +243,251 @@ def get_severity(name, prob):
         if lo <= prob < hi:
             return label
     return 'Severe' if prob >= THRESHOLDS[name] else ''
+
+
+# =============================================================================
+# PDF REPORT GENERATION
+# =============================================================================
+def generate_pdf_report(probs, detected, elapsed, orig_np,
+                        attn_map, mask_full, recon_np, top_k):
+    """Generate a professional medical PDF report."""
+    buffer   = io.BytesIO()
+    doc      = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        rightMargin=20*mm, leftMargin=20*mm,
+        topMargin=20*mm,   bottomMargin=20*mm)
+
+    styles   = getSampleStyleSheet()
+    story    = []
+    W, H     = A4
+
+    # Colours
+    DARK     = colors.HexColor('#0D1117')
+    PURPLE   = colors.HexColor('#9c27b0')
+    PINK     = colors.HexColor('#f48fb1')
+    GREEN    = colors.HexColor('#51CF66')
+    RED      = colors.HexColor('#FF6B6B')
+    GREY     = colors.HexColor('#8B949E')
+    WHITE    = colors.white
+
+    title_style = ParagraphStyle(
+        'Title2', parent=styles['Normal'],
+        fontSize=20, fontName='Helvetica-Bold',
+        textColor=WHITE, alignment=TA_CENTER, spaceAfter=4)
+    sub_style = ParagraphStyle(
+        'Sub', parent=styles['Normal'],
+        fontSize=10, fontName='Helvetica',
+        textColor=GREY, alignment=TA_CENTER)
+    h2_style = ParagraphStyle(
+        'H2', parent=styles['Normal'],
+        fontSize=13, fontName='Helvetica-Bold',
+        textColor=PURPLE, spaceBefore=12, spaceAfter=6)
+    body_style = ParagraphStyle(
+        'Body2', parent=styles['Normal'],
+        fontSize=10, fontName='Helvetica',
+        textColor=colors.HexColor('#333333'), spaceAfter=4)
+
+    # ── Header ──────────────────────────────────────────────────
+    header_data = [[
+        Paragraph('Retinal Disease Detection System', title_style),
+        Paragraph(f'Generated: {datetime.now().strftime("%Y-%m-%d  %H:%M")}',
+                  sub_style)
+    ]]
+    header_tbl = Table(header_data, colWidths=[120*mm, 50*mm])
+    header_tbl.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), DARK),
+        ('VALIGN',     (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 12),
+        ('BOTTOMPADDING',(0,0),(-1,-1),12),
+        ('LEFTPADDING', (0,0),(0,0),   16),
+        ('RIGHTPADDING',(1,0),(1,0),   12),
+        ('ROUNDEDCORNERS',(0,0),(-1,-1), [6,6,6,6]),
+    ]))
+    story.append(header_tbl)
+    story.append(Spacer(1, 8*mm))
+
+    # ── Status ───────────────────────────────────────────────────
+    status_txt  = ('DISEASE DETECTED: ' + ', '.join(detected)
+                   if detected else 'NORMAL — No Disease Detected')
+    status_col  = RED if detected else GREEN
+    status_data = [[Paragraph(status_txt, ParagraphStyle(
+        'St', parent=styles['Normal'],
+        fontSize=13, fontName='Helvetica-Bold',
+        textColor=WHITE, alignment=TA_CENTER))]]
+    status_tbl  = Table(status_data, colWidths=[170*mm])
+    status_tbl.setStyle(TableStyle([
+        ('BACKGROUND',  (0,0),(-1,-1), status_col),
+        ('TOPPADDING',  (0,0),(-1,-1), 10),
+        ('BOTTOMPADDING',(0,0),(-1,-1), 10),
+        ('ROUNDEDCORNERS',(0,0),(-1,-1),[6,6,6,6]),
+    ]))
+    story.append(status_tbl)
+    story.append(Spacer(1, 6*mm))
+
+    # ── Disease probabilities table ──────────────────────────────
+    story.append(Paragraph('Disease Probabilities', h2_style))
+    story.append(HRFlowable(width='100%', thickness=1,
+                             color=colors.HexColor('#e0e0e0')))
+    story.append(Spacer(1, 3*mm))
+
+    d_colors = ['#f48fb1','#81c784','#64b5f6','#ffb74d']
+    tbl_data = [['Disease', 'Probability', 'Status', 'Threshold']]
+    for i,(name,full,prob) in enumerate(
+            zip(LABEL_NAMES, LABEL_FULL, probs)):
+        th  = THRESHOLDS[name]
+        det = prob >= th
+        sev = get_severity(name, prob)
+        bar = '■' * int(prob*20) + '□' * (20-int(prob*20))
+        tbl_data.append([
+            full,
+            f'{prob:.3f}  {bar}',
+            f'{"✓ "+sev.upper() if det else "✗ Not detected"}',
+            f'{th:.4f}'
+        ])
+
+    dt = Table(tbl_data,
+               colWidths=[55*mm, 65*mm, 32*mm, 18*mm])
+    dt_style = [
+        ('BACKGROUND',    (0,0),(-1,0),  PURPLE),
+        ('TEXTCOLOR',     (0,0),(-1,0),  WHITE),
+        ('FONTNAME',      (0,0),(-1,0),  'Helvetica-Bold'),
+        ('FONTSIZE',      (0,0),(-1,-1), 9),
+        ('ROWBACKGROUNDS',(0,1),(-1,-1),
+         [colors.HexColor('#f9f9f9'), WHITE]),
+        ('GRID',          (0,0),(-1,-1), 0.5,
+         colors.HexColor('#e0e0e0')),
+        ('TOPPADDING',    (0,0),(-1,-1), 6),
+        ('BOTTOMPADDING', (0,0),(-1,-1), 6),
+        ('LEFTPADDING',   (0,0),(-1,-1), 8),
+    ]
+    # Colour detected rows
+    for i,(name,prob) in enumerate(zip(LABEL_NAMES,probs),1):
+        if prob >= THRESHOLDS[name]:
+            dt_style.append(
+                ('TEXTCOLOR',(2,i),(2,i), GREEN))
+        else:
+            dt_style.append(
+                ('TEXTCOLOR',(2,i),(2,i), GREY))
+    dt.setStyle(TableStyle(dt_style))
+    story.append(dt)
+    story.append(Spacer(1, 6*mm))
+
+    # ── Visual panels ────────────────────────────────────────────
+    story.append(Paragraph('Visual Analysis', h2_style))
+    story.append(HRFlowable(width='100%', thickness=1,
+                             color=colors.HexColor('#e0e0e0')))
+    story.append(Spacer(1, 3*mm))
+
+    def np_to_rl_img(arr, w_mm, h_mm):
+        buf = io.BytesIO()
+        if arr.ndim == 2:
+            plt.imsave(buf, arr, cmap='inferno', format='PNG')
+        else:
+            from PIL import Image as PILImg
+            PILImg.fromarray(arr.astype('uint8')).save(buf, 'PNG')
+        buf.seek(0)
+        return RLImage(buf, width=w_mm*mm, height=h_mm*mm)
+
+    attn_arr = attn_map
+    panel_w, panel_h = 38, 38
+    imgs = [
+        np_to_rl_img(orig_np,   panel_w, panel_h),
+        np_to_rl_img(attn_arr,  panel_w, panel_h),
+        np_to_rl_img(recon_np,  panel_w, panel_h),
+    ]
+    labels = ['Original (CLAHE)', 'AI Attention Map',
+              'Doctor View (AGPT)']
+    panel_data = [imgs, [
+        Paragraph(l, ParagraphStyle('PL', parent=styles['Normal'],
+            fontSize=8, fontName='Helvetica', alignment=TA_CENTER))
+        for l in labels]]
+    pt = Table(panel_data, colWidths=[panel_w*mm]*3,
+               rowHeights=[panel_h*mm, 8*mm])
+    pt.setStyle(TableStyle([
+        ('ALIGN',  (0,0),(-1,-1),'CENTER'),
+        ('VALIGN', (0,0),(-1,-1),'MIDDLE'),
+        ('GRID',   (0,0),(-1,-1), 0.5,
+         colors.HexColor('#e0e0e0')),
+        ('BACKGROUND',(0,1),(-1,1),
+         colors.HexColor('#f5f5f5')),
+    ]))
+    story.append(pt)
+    story.append(Spacer(1, 6*mm))
+
+    # ── AGPT stats ───────────────────────────────────────────────
+    story.append(Paragraph('AGPT Transmission Summary', h2_style))
+    story.append(HRFlowable(width='100%', thickness=1,
+                             color=colors.HexColor('#e0e0e0')))
+    story.append(Spacer(1, 3*mm))
+
+    agpt_data = [
+        ['Metric', 'Value', 'Description'],
+        ['Patches Transmitted', f'{top_k} / 196',
+         '30% of image patches selected'],
+        ['Original Image Size', '588 KB',
+         'Full fundus image'],
+        ['Transmitted Packet', '178 KB',
+         'Disease-relevant patches only'],
+        ['Bandwidth Saved', '70.3%',
+         '410 KB reduction per image'],
+        ['Time @100kbps', '~15 seconds',
+         'vs ~47 seconds for full image'],
+        ['Analysis Time', f'{elapsed:.2f} seconds',
+         'Total inference time'],
+    ]
+    at = Table(agpt_data, colWidths=[50*mm, 40*mm, 80*mm])
+    at.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0),(-1,0),  PURPLE),
+        ('TEXTCOLOR',     (0,0),(-1,0),  WHITE),
+        ('FONTNAME',      (0,0),(-1,0),  'Helvetica-Bold'),
+        ('FONTSIZE',      (0,0),(-1,-1), 9),
+        ('ROWBACKGROUNDS',(0,1),(-1,-1),
+         [colors.HexColor('#f9f9f9'), WHITE]),
+        ('GRID',          (0,0),(-1,-1), 0.5,
+         colors.HexColor('#e0e0e0')),
+        ('TOPPADDING',    (0,0),(-1,-1), 6),
+        ('BOTTOMPADDING', (0,0),(-1,-1), 6),
+        ('LEFTPADDING',   (0,0),(-1,-1), 8),
+        ('TEXTCOLOR',     (1,4),(1,4),   GREEN),
+        ('FONTNAME',      (1,4),(1,4),   'Helvetica-Bold'),
+    ]))
+    story.append(at)
+    story.append(Spacer(1, 6*mm))
+
+    # ── Clinical info ────────────────────────────────────────────
+    if detected:
+        story.append(Paragraph('Clinical Indicators', h2_style))
+        story.append(HRFlowable(width='100%', thickness=1,
+                                 color=colors.HexColor('#e0e0e0')))
+        story.append(Spacer(1, 3*mm))
+        for name in detected:
+            signs, cause = DISEASE_INFO[name]
+            story.append(Paragraph(
+                f'<b>{name}</b>', ParagraphStyle('DH',
+                parent=styles['Normal'], fontSize=11,
+                fontName='Helvetica-Bold',
+                textColor=PURPLE, spaceBefore=6)))
+            story.append(Paragraph(
+                f'Signs: {signs}', body_style))
+            story.append(Paragraph(
+                f'Cause: {cause}', body_style))
+        story.append(Spacer(1, 4*mm))
+
+    # ── Footer ───────────────────────────────────────────────────
+    story.append(HRFlowable(width='100%', thickness=1,
+                             color=colors.HexColor('#e0e0e0')))
+    story.append(Spacer(1, 2*mm))
+    story.append(Paragraph(
+        'AI Foundation Model · AGPT Novel Contribution · '
+        'Focal Loss (Lin et al. 2020) · '
+        'Class-Balanced Sampling (Cui et al. 2019) · 2026',
+        ParagraphStyle('Ft', parent=styles['Normal'],
+            fontSize=7, fontName='Helvetica',
+            textColor=GREY, alignment=TA_CENTER)))
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
 
 # =============================================================================
 # SIDEBAR
@@ -483,6 +750,61 @@ if uploaded and analyze_btn:
                     Cause: {cause}</span>
             </div>
             """, unsafe_allow_html=True)
+
+    # ── Download section ─────────────────────────────────────────
+    st.markdown("### 📥 Download Report")
+    dl1, dl2 = st.columns(2)
+
+    # Download result image
+    with dl1:
+        fig_dl, axes_dl = plt.subplots(1, 3, figsize=(12, 4),
+                                        facecolor='#0D1117')
+        for ax_i, (img_data, title_i) in enumerate([
+                (orig_np,  '① Original'),
+                (attn.reshape(N_SIDE,N_SIDE).numpy(), '② Attention'),
+                (recon_np, '③ Doctor View')]):
+            if img_data.ndim == 2:
+                axes_dl[ax_i].imshow(img_data, cmap='inferno')
+            else:
+                axes_dl[ax_i].imshow(img_data)
+            axes_dl[ax_i].set_title(title_i, color='white',
+                                     fontsize=10)
+            axes_dl[ax_i].axis('off')
+        plt.tight_layout(pad=1)
+        img_buf = io.BytesIO()
+        plt.savefig(img_buf, format='PNG', dpi=120,
+                    bbox_inches='tight',
+                    facecolor='#0D1117')
+        plt.close(fig_dl)
+        img_buf.seek(0)
+        st.download_button(
+            label="⬇️  Download Result Image",
+            data=img_buf.getvalue(),
+            file_name=f"retinal_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
+            mime="image/png",
+            use_container_width=True)
+
+    # Generate and download PDF
+    with dl2:
+        with st.spinner("Generating PDF..."):
+            pdf_bytes = generate_pdf_report(
+                probs, detected, elapsed,
+                orig_np, attn.reshape(N_SIDE,N_SIDE).numpy(),
+                mask_full, recon_np, top_k)
+        st.download_button(
+            label="⬇️  Download PDF Report",
+            data=pdf_bytes,
+            file_name=f"retinal_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            mime="application/pdf",
+            use_container_width=True)
+
+    st.markdown("""
+    <div style='background:#161B22;border:1px solid #30363D;
+                border-radius:8px;padding:10px;margin-top:8px;
+                text-align:center;color:#8B949E;font-size:12px'>
+        💡 Share the PDF report with your specialist doctor via email
+    </div>
+    """, unsafe_allow_html=True)
 
 elif not uploaded:
     with col_results:
