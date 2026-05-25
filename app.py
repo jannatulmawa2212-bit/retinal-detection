@@ -12,6 +12,7 @@ from PIL import Image
 from torchvision import transforms
 import time
 import os
+from huggingface_hub import hf_hub_download
 
 # =============================================================================
 # PAGE CONFIG
@@ -153,15 +154,25 @@ class PRETIClassifier(nn.Module):
 
 @st.cache_resource
 def load_model():
+    from huggingface_hub import hf_hub_download
     model = PRETIClassifier().to(DEVICE)
-    if os.path.exists('best_model.pth'):
-        state      = torch.load('best_model.pth', map_location=DEVICE)
+    try:
+        # Download model from HuggingFace
+        model_path = hf_hub_download(
+            repo_id="mawa2212/preti-retinal-weights",
+            filename="best_model.pth",
+            repo_type="model"
+        )
+        state      = torch.load(model_path, map_location=DEVICE)
         model_dict = model.state_dict()
         filtered   = {k: v for k, v in state.items()
                       if k in model_dict and
                       model_dict[k].shape == v.shape}
         model_dict.update(filtered)
         model.load_state_dict(model_dict)
+        st.sidebar.success("✅ Model loaded successfully")
+    except Exception as e:
+        st.sidebar.error(f"Model load error: {e}")
     model.eval()
     return model
 
