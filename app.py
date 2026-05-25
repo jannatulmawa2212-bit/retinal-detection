@@ -264,7 +264,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("""
     <div style='color:#484F58;font-size:10px;line-height:1.6'>
-    PRETI: Lee et al., 2025<br>
+    PRETI: Lee et al., 2026<br>
     Focal Loss: Lin et al., 2020<br>
     Sampler: Cui et al., 2019
     </div>
@@ -277,7 +277,7 @@ st.markdown("""
 <div style='text-align:center;padding:8px 0 24px'>
     <div style='font-size:13px;color:#58A6FF;font-weight:600;
                 letter-spacing:2px;margin-bottom:6px'>
-        ADVANCED RETINAL DISEASE DETECTION SYSTEM · 2025
+        ADVANCED RETINAL DISEASE DETECTION SYSTEM · 2026
     </div>
     <div style='font-size:30px;font-weight:700;color:#E6EDF3;
                 margin-bottom:8px'>
