@@ -206,6 +206,51 @@ div[data-testid="stFileDropzone"] {
     border: 2px dashed #ce93d8 !important;
     border-radius: 16px !important;
 }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.hero { animation: scaleIn 0.6s ease; }
+.metric-card { animation: fadeInUp 0.5s ease; }
+.disease-bar { animation: slideInLeft 0.4s ease; }
+.stat-pill   { animation: fadeInUp 0.6s ease; }
+.status-found, .status-clear { animation: scaleIn 0.4s ease; }
+
+div[data-testid="stFileDropzone"] > div {
+    background: transparent !important;
+}
+div[data-testid="stFileDropzone"] p {
+    color: #9c27b0 !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+}
+div[data-testid="stFileDropzone"] span {
+    color: #ce93d8 !important;
+}
+div[data-testid="stFileDropzone"] button {
+    background: linear-gradient(135deg,#9c27b0,#e91e8c) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 20px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 16px rgba(156,39,176,0.3) !important;
+}
+div[data-testid="stFileUploaderDropzoneInstructions"] {
+    color: #9c27b0 !important;
+}
+small[data-testid="stFileUploaderDropzoneInstructions"] {
+    color: #ce93d8 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -404,16 +449,12 @@ col_l, col_r = st.columns([1, 2])
 
 with col_l:
     st.markdown("""
-    <div class='upload-box'>
-        <div style='font-size:12px;font-weight:700;color:#9c27b0;
-                    letter-spacing:1px;margin-bottom:10px;
-                    text-align:center'>
-            📤 UPLOAD RETINAL IMAGE
-        </div>
-        <div style='font-size:11px;color:#ce93d8;
-                    text-align:center;margin-bottom:10px'>
+    <div style='text-align:center;margin-bottom:8px'>
+        <span style='font-size:12px;font-weight:700;color:#9c27b0;
+                     letter-spacing:1px'>📤 UPLOAD RETINAL IMAGE</span><br>
+        <span style='font-size:11px;color:#ce93d8'>
             JPEG or PNG · Any resolution
-        </div>
+        </span>
     </div>
     """, unsafe_allow_html=True)
 
