@@ -17,7 +17,7 @@ import os
 # PAGE CONFIG
 # =============================================================================
 st.set_page_config(
-    page_title="PRETI Retinal Disease Detection",
+    page_title="Retinal Disease Detection System",
     page_icon="🔬",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -219,10 +219,10 @@ with st.sidebar:
     <div style='text-align:center;padding:8px 0 16px'>
         <div style='font-size:32px'>🔬</div>
         <div style='font-size:16px;font-weight:700;color:#E6EDF3'>
-            PRETI Retinal AI
+            RetinalAI Vision
         </div>
         <div style='font-size:11px;color:#8B949E;margin-top:4px'>
-            BME Undergraduate Thesis 2025
+            AI-Powered Retinal Disease Detection
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -252,7 +252,7 @@ with st.sidebar:
     st.markdown("### ℹ️ About")
     st.markdown("""
     <div style='color:#8B949E;font-size:12px;line-height:1.8'>
-    This system uses <b style='color:#E6EDF3'>PRETI</b> foundation model
+    This system uses <b style='color:#E6EDF3'>advanced AI</b> foundation model
     pretrained on <b style='color:#E6EDF3'>1,017,549</b> retinal images
     to simultaneously detect 4 diseases.<br><br>
     <b style='color:#58A6FF'>AGPT</b> uses PRETI's RAAM attention maps
@@ -277,11 +277,11 @@ st.markdown("""
 <div style='text-align:center;padding:8px 0 24px'>
     <div style='font-size:13px;color:#58A6FF;font-weight:600;
                 letter-spacing:2px;margin-bottom:6px'>
-        UNDERGRADUATE THESIS · BIOMEDICAL ENGINEERING · 2025
+        ADVANCED RETINAL DISEASE DETECTION SYSTEM · 2025
     </div>
     <div style='font-size:30px;font-weight:700;color:#E6EDF3;
                 margin-bottom:8px'>
-        🔬 PRETI Retinal Disease Detection
+        👁️ Retinal Disease Detection System
     </div>
     <div style='font-size:14px;color:#8B949E'>
         Multi-label detection of
