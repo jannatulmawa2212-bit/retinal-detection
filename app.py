@@ -137,8 +137,8 @@ LABEL_NAMES = ['DR', 'GLAUCOMA', 'HR', 'RVO']
 LABEL_FULL  = ['Diabetic Retinopathy', 'Glaucoma',
                'Hypertensive Retinopathy', 'Retinal Vein Occlusion']
 COLORS      = ['#FF6B6B', '#51CF66', '#74C0FC', '#FFA94D']
-THRESHOLDS  = {'DR': 0.3894, 'GLAUCOMA': 0.5200,
-               'HR': 0.8667, 'RVO': 0.3765}
+THRESHOLDS  = {'DR': 0.560, 'GLAUCOMA': 0.635,
+               'HR': 0.910, 'RVO': 0.344}
 SEVERITY    = {
     'DR':       [(0.39,0.55,'Mild'),(0.55,0.75,'Moderate'),(0.75,1.0,'Severe')],
     'GLAUCOMA': [(0.52,0.65,'Mild'),(0.65,0.82,'Moderate'),(0.82,1.0,'Severe')],
