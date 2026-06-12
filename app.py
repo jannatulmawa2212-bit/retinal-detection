@@ -280,98 +280,140 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
 # =============================================================================
-# REPORT GENERATION (clean, physician-facing, no internal references)
+# REPORT GENERATION (PDF, physician-facing, no internal references)
 # =============================================================================
-def build_report(probs, detected, elapsed, top_k):
+def _save_temp_png(arr, cmap=None, overlay=None, overlay_alpha=0.55,
+                   overlay_cmap='YlOrRd'):
+    """Save a numpy image to a temp PNG file and return its path."""
+    import tempfile
+    fig, ax = plt.subplots(figsize=(3, 3))
+    if cmap:
+        ax.imshow(arr, cmap=cmap, interpolation='bilinear')
+    else:
+        ax.imshow(arr)
+    if overlay is not None:
+        ax.imshow(overlay, alpha=overlay_alpha, cmap=overlay_cmap)
+    ax.axis('off')
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+    fig.savefig(tmp.name, format='png', bbox_inches='tight', pad_inches=0, dpi=120)
+    plt.close(fig)
+    return tmp.name
+
+
+def build_report(probs, detected, elapsed, top_k, images=None):
+    """Build a clean PDF report and return it as bytes."""
     import datetime
+    from fpdf import FPDF
     now = datetime.datetime.now().strftime("%Y-%m-%d  %H:%M")
 
-    # disease rows
-    rows = ""
-    for i, name in enumerate(LABEL_NAMES):
-        p = probs[i]
-        thr = THRESHOLDS[name]
-        if p >= thr:
-            sev = get_severity(name, p) or "Detected"
-            status = f"<span style='color:#1F8A3B;font-weight:600'>&#10003; {sev}</span>"
-        else:
-            status = "<span style='color:#888'>&#10007; Not detected</span>"
-        full = LABEL_FULL[i]
-        bar_w = int(p * 160)
-        rows += f"""
-        <tr>
-          <td style="padding:10px 14px;border-bottom:1px solid #eee">{full}</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #eee">
-              {p:.3f}
-              <span style="display:inline-block;height:10px;width:{bar_w}px;
-                    background:#7C3AED;border-radius:2px;margin-left:8px;
-                    vertical-align:middle"></span>
-          </td>
-          <td style="padding:10px 14px;border-bottom:1px solid #eee">{status}</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #eee">{thr:.4f}</td>
-        </tr>"""
+    PURPLE = (124, 58, 237); DARK = (26, 26, 46)
+    GREEN  = (31, 138, 59);  RED  = (255, 107, 107); GREY = (120, 120, 120)
 
+    pdf = FPDF(orientation='P', unit='mm', format='A4')
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+
+    # Header bar
+    pdf.set_fill_color(*DARK)
+    pdf.rect(0, 0, 210, 26, 'F')
+    pdf.set_xy(12, 7)
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font("Helvetica", 'B', 15)
+    pdf.cell(120, 8, "Retinal Disease Detection Report", ln=0)
+    pdf.set_xy(135, 6)
+    pdf.set_font("Helvetica", '', 8)
+    pdf.cell(63, 5, f"Generated: {now}", ln=2, align='R')
+    pdf.cell(63, 5, f"Analysis time: {elapsed:.2f}s", ln=2, align='R')
+    pdf.ln(16)
+
+    # Status banner
+    pdf.set_text_color(255, 255, 255)
     if detected:
-        banner = (f"<div style='background:#FF6B6B;color:white;text-align:center;"
-                  f"padding:14px;font-size:18px;font-weight:700;border-radius:6px'>"
-                  f"DISEASE DETECTED: {', '.join(detected)}</div>")
+        pdf.set_fill_color(*RED); msg = "DISEASE DETECTED: " + ", ".join(detected)
     else:
-        banner = ("<div style='background:#1F8A3B;color:white;text-align:center;"
-                  "padding:14px;font-size:18px;font-weight:700;border-radius:6px'>"
-                  "NO DISEASE DETECTED</div>")
+        pdf.set_fill_color(*GREEN); msg = "NO DISEASE DETECTED"
+    pdf.set_font("Helvetica", 'B', 12)
+    pdf.cell(0, 11, msg, ln=1, align='C', fill=True)
+    pdf.ln(4)
 
-    # clinical indicators
-    clinical = ""
+    # Disease probabilities table
+    pdf.set_text_color(*PURPLE)
+    pdf.set_font("Helvetica", 'B', 11)
+    pdf.cell(0, 7, "Disease Probabilities", ln=1)
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_fill_color(*PURPLE)
+    pdf.set_font("Helvetica", 'B', 9)
+    pdf.cell(70, 8, "  Disease", fill=True)
+    pdf.cell(35, 8, "Probability", fill=True, align='C')
+    pdf.cell(45, 8, "Status", fill=True, align='C')
+    pdf.cell(35, 8, "Threshold", fill=True, align='C')
+    pdf.ln(8)
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font("Helvetica", '', 9)
+    for i, name in enumerate(LABEL_NAMES):
+        p = probs[i]; thr = THRESHOLDS[name]; full = LABEL_FULL[i]
+        fill = (i % 2 == 0)
+        if fill: pdf.set_fill_color(245, 243, 250)
+        pdf.cell(70, 7, "  " + full, fill=fill)
+        pdf.cell(35, 7, f"{p:.3f}", align='C', fill=fill)
+        if p >= thr:
+            pdf.set_text_color(*GREEN)
+            pdf.cell(45, 7, get_severity(name, p) or "Detected", align='C', fill=fill)
+        else:
+            pdf.set_text_color(*GREY)
+            pdf.cell(45, 7, "Not detected", align='C', fill=fill)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(35, 7, f"{thr:.4f}", align='C', fill=fill)
+        pdf.ln(7)
+    pdf.ln(3)
+
+    # AGPT summary
+    pdf.set_text_color(*PURPLE); pdf.set_font("Helvetica", 'B', 11)
+    pdf.cell(0, 7, "Transmission Summary (AGPT)", ln=1)
+    pdf.set_text_color(0, 0, 0); pdf.set_font("Helvetica", '', 9)
+    pdf.cell(0, 6, f"Patches transmitted: {top_k} / 196 (top 30%)", ln=1)
+    pdf.cell(0, 6, "Bandwidth saved: 70.3%   (~588 KB  ->  ~178 KB)", ln=1)
+    pdf.ln(3)
+
+    # Visual analysis (3 images)
+    x0 = 12
+    if images:
+        pdf.set_text_color(*PURPLE); pdf.set_font("Helvetica", 'B', 11)
+        pdf.cell(0, 7, "Visual Analysis", ln=1)
+        y_img = pdf.get_y() + 1
+        w = 58; gap = 4
+        labels = ["Original (CLAHE)", "AI Attention Map", "Doctor View (AGPT)"]
+        paths  = [images['original'], images['attention'], images['doctor']]
+        for j, (pth, lab) in enumerate(zip(paths, labels)):
+            x = x0 + j * (w + gap)
+            pdf.image(pth, x=x, y=y_img, w=w, h=w)
+            pdf.set_xy(x, y_img + w + 1)
+            pdf.set_text_color(80, 80, 80); pdf.set_font("Helvetica", '', 8)
+            pdf.cell(w, 4, lab, align='C')
+        pdf.set_xy(x0, y_img + w + 8)
+
+    # Clinical indicators
     if detected:
-        clinical = "<h3 style='color:#7C3AED;margin-top:28px'>Clinical Indicators</h3>"
+        pdf.set_x(x0)
+        pdf.ln(1)
+        pdf.set_text_color(*PURPLE); pdf.set_font("Helvetica", 'B', 11)
+        pdf.set_x(x0); pdf.cell(0, 7, "Clinical Indicators", ln=1)
         for name in detected:
             signs, cause = DISEASE_INFO[name]
-            clinical += (f"<p style='margin:6px 0'><b style='color:#7C3AED'>{name}</b><br>"
-                         f"<span style='font-size:14px'>Signs: {signs}</span><br>"
-                         f"<span style='font-size:14px'>Cause: {cause}</span></p>")
+            pdf.set_text_color(*PURPLE); pdf.set_font("Helvetica", 'B', 9)
+            pdf.set_x(x0); pdf.cell(0, 5, name, ln=1)
+            pdf.set_text_color(0, 0, 0); pdf.set_font("Helvetica", '', 9)
+            pdf.set_x(x0); pdf.multi_cell(0, 5, f"Signs: {signs}")
+            pdf.set_x(x0); pdf.multi_cell(0, 5, f"Cause: {cause}")
+            pdf.ln(1)
 
-    html = f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8">
-<style>
-  body {{ font-family:'Segoe UI',Arial,sans-serif; color:#222; max-width:820px;
-          margin:24px auto; padding:0 20px }}
-  .header {{ background:#1a1a2e; color:white; padding:22px 26px; border-radius:8px;
-             display:flex; justify-content:space-between; align-items:center }}
-  .header h1 {{ font-size:22px; margin:0; line-height:1.3 }}
-  .header .meta {{ font-size:13px; color:#bbb; text-align:right }}
-  table {{ width:100%; border-collapse:collapse; margin-top:10px; font-size:14px }}
-  th {{ background:#7C3AED; color:white; padding:10px 14px; text-align:left }}
-  h3 {{ color:#7C3AED }}
-  .footer {{ margin-top:34px; padding-top:12px; border-top:1px solid #ddd;
-             font-size:11px; color:#999; text-align:center }}
-</style></head>
-<body>
-  <div class="header">
-    <h1>Retinal Disease Detection&nbsp;Report</h1>
-    <div class="meta">Generated: {now}<br>Analysis time: {elapsed:.2f}s</div>
-  </div>
+    # Footer
+    pdf.set_y(-16)
+    pdf.set_text_color(*GREY); pdf.set_font("Helvetica", 'I', 8)
+    pdf.cell(0, 5, "Automated retinal screening tool  -  For clinical decision support only  -  " + now[:4], align='C')
 
-  <div style="margin:18px 0">{banner}</div>
+    return bytes(pdf.output(dest='S'))
 
-  <h3>Disease Probabilities</h3>
-  <table>
-    <tr><th>Disease</th><th>Probability</th><th>Status</th><th>Threshold</th></tr>
-    {rows}
-  </table>
-
-  <h3 style="margin-top:24px">Transmission Summary (AGPT)</h3>
-  <p style="font-size:14px">
-     Patches transmitted: <b>{top_k} / 196</b> (top 30%)<br>
-     Bandwidth saved: <b>70.3%</b> &nbsp;|&nbsp; ~588&nbsp;KB &rarr; ~178&nbsp;KB
-  </p>
-
-  {clinical}
-
-  <div class="footer">
-     Automated retinal screening tool &middot; For clinical decision support only &middot; {now[:4]}
-  </div>
-</body></html>"""
-    return html
 
 
 # =============================================================================
@@ -577,14 +619,19 @@ if uploaded and analyze_btn:
             </div>
             """, unsafe_allow_html=True)
 
-    # ── Downloadable report for the physician ─────────────────────
+    # ── Downloadable PDF report for the physician ─────────────────
     st.markdown("### Report")
-    report_html = build_report(probs, detected, elapsed, top_k)
+    report_images = {
+        'original':  _save_temp_png(orig_np),
+        'attention': _save_temp_png(attn_map, cmap='inferno'),
+        'doctor':    _save_temp_png(orig_np, overlay=mask_full),
+    }
+    report_pdf = build_report(probs, detected, elapsed, top_k, images=report_images)
     st.download_button(
-        label="⬇  Download Report (HTML)",
-        data=report_html,
-        file_name="retinal_screening_report.html",
-        mime="text/html",
+        label="⬇  Download PDF Report",
+        data=report_pdf,
+        file_name="retinal_screening_report.pdf",
+        mime="application/pdf",
     )
 
 elif not uploaded:
