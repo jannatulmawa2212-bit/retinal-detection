@@ -280,6 +280,101 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
 # =============================================================================
+# REPORT GENERATION (clean, physician-facing, no internal references)
+# =============================================================================
+def build_report(probs, detected, elapsed, top_k):
+    import datetime
+    now = datetime.datetime.now().strftime("%Y-%m-%d  %H:%M")
+
+    # disease rows
+    rows = ""
+    for i, name in enumerate(LABEL_NAMES):
+        p = probs[i]
+        thr = THRESHOLDS[name]
+        if p >= thr:
+            sev = get_severity(name, p) or "Detected"
+            status = f"<span style='color:#1F8A3B;font-weight:600'>&#10003; {sev}</span>"
+        else:
+            status = "<span style='color:#888'>&#10007; Not detected</span>"
+        full = LABEL_FULL[i]
+        bar_w = int(p * 160)
+        rows += f"""
+        <tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #eee">{full}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #eee">
+              {p:.3f}
+              <span style="display:inline-block;height:10px;width:{bar_w}px;
+                    background:#7C3AED;border-radius:2px;margin-left:8px;
+                    vertical-align:middle"></span>
+          </td>
+          <td style="padding:10px 14px;border-bottom:1px solid #eee">{status}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #eee">{thr:.4f}</td>
+        </tr>"""
+
+    if detected:
+        banner = (f"<div style='background:#FF6B6B;color:white;text-align:center;"
+                  f"padding:14px;font-size:18px;font-weight:700;border-radius:6px'>"
+                  f"DISEASE DETECTED: {', '.join(detected)}</div>")
+    else:
+        banner = ("<div style='background:#1F8A3B;color:white;text-align:center;"
+                  "padding:14px;font-size:18px;font-weight:700;border-radius:6px'>"
+                  "NO DISEASE DETECTED</div>")
+
+    # clinical indicators
+    clinical = ""
+    if detected:
+        clinical = "<h3 style='color:#7C3AED;margin-top:28px'>Clinical Indicators</h3>"
+        for name in detected:
+            signs, cause = DISEASE_INFO[name]
+            clinical += (f"<p style='margin:6px 0'><b style='color:#7C3AED'>{name}</b><br>"
+                         f"<span style='font-size:14px'>Signs: {signs}</span><br>"
+                         f"<span style='font-size:14px'>Cause: {cause}</span></p>")
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+  body {{ font-family:'Segoe UI',Arial,sans-serif; color:#222; max-width:820px;
+          margin:24px auto; padding:0 20px }}
+  .header {{ background:#1a1a2e; color:white; padding:22px 26px; border-radius:8px;
+             display:flex; justify-content:space-between; align-items:center }}
+  .header h1 {{ font-size:22px; margin:0; line-height:1.3 }}
+  .header .meta {{ font-size:13px; color:#bbb; text-align:right }}
+  table {{ width:100%; border-collapse:collapse; margin-top:10px; font-size:14px }}
+  th {{ background:#7C3AED; color:white; padding:10px 14px; text-align:left }}
+  h3 {{ color:#7C3AED }}
+  .footer {{ margin-top:34px; padding-top:12px; border-top:1px solid #ddd;
+             font-size:11px; color:#999; text-align:center }}
+</style></head>
+<body>
+  <div class="header">
+    <h1>Retinal Disease Detection&nbsp;Report</h1>
+    <div class="meta">Generated: {now}<br>Analysis time: {elapsed:.2f}s</div>
+  </div>
+
+  <div style="margin:18px 0">{banner}</div>
+
+  <h3>Disease Probabilities</h3>
+  <table>
+    <tr><th>Disease</th><th>Probability</th><th>Status</th><th>Threshold</th></tr>
+    {rows}
+  </table>
+
+  <h3 style="margin-top:24px">Transmission Summary (AGPT)</h3>
+  <p style="font-size:14px">
+     Patches transmitted: <b>{top_k} / 196</b> (top 30%)<br>
+     Bandwidth saved: <b>70.3%</b> &nbsp;|&nbsp; ~588&nbsp;KB &rarr; ~178&nbsp;KB
+  </p>
+
+  {clinical}
+
+  <div class="footer">
+     Automated retinal screening tool &middot; For clinical decision support only &middot; {now[:4]}
+  </div>
+</body></html>"""
+    return html
+
+
+# =============================================================================
 # MAIN PAGE
 # =============================================================================
 st.markdown("""
@@ -481,6 +576,16 @@ if uploaded and analyze_btn:
                     Cause: {cause}</span>
             </div>
             """, unsafe_allow_html=True)
+
+    # ── Downloadable report for the physician ─────────────────────
+    st.markdown("### Report")
+    report_html = build_report(probs, detected, elapsed, top_k)
+    st.download_button(
+        label="⬇  Download Report (HTML)",
+        data=report_html,
+        file_name="retinal_screening_report.html",
+        mime="text/html",
+    )
 
 elif not uploaded:
     with col_results:
